@@ -1,0 +1,10 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+*.opendb
+/UsbCommSim/.vs/UsbCommSim/v16
+/UsbCommSim/.vs/UsbCommSim/v15
+/UsbCommSim/Debug
+/UsbCommSim/UsbCommSim/Debug
+/UsbCommSim/UsbCommSim/x64/Debug
