@@ -351,52 +351,67 @@ int main(int argc, char *argv[])
 		ep_in_addr = config_desc->interface[0].altsetting[0].endpoint[0].bEndpointAddress;
 		ep_out_addr = config_desc->interface[0].altsetting[0].endpoint[1].bEndpointAddress;
 
+		int iSendBulk[3] = {1,1,0};
+		int iRecvIntr = 0, iLedLight = 0;
+		memset(data_Tx, 0, sizeof(data_Tx));
+		memset(data_Rx, 0, sizeof(data_Rx));
 		while (1)
 		{
-			for (i = 0; i < NUM_OUT_DATA_TYPE; i++)
+			if (iSendBulk[0] == 1)
 			{
-				memset(data_Tx, 0, sizeof(data_Tx));
-				memset(data_Rx, 0, sizeof(data_Rx));
-				length = 0;
-				actLen = 0;
+				for (i = 0; i < NUM_OUT_DATA_TYPE; i++)
+				{
+					length = 0;
+					actLen = 0;
 
-				if (BulkOutData1[i][24] == 0x30)
-				{
-					length = 1024*3+28;
-				}
-				else if (BulkOutData1[i][24] == 0x40)
-				{
-					length = 1024*4+28;
-				}
-				if (length > 0)
-				{
-					memcpy(data_Tx, BulkOutData1[i], length);
-				}
-				//printf("Ready to send the first bulk data, Press any key to continue... \n");
-				//getchar();
-				Sleep(100);
-				r = libusb_bulk_transfer(dev_handle,
-					ep_out_addr,
-					data_Tx,
-					length,
-					&actLen,
-					0);
-				Sleep(100);
-				if (r < 0)
-				{
-					printf("Bulk transfer error.%d\n", r);
-				}
-				else
-				{
-					//if (r >= 0)
+					if (BulkOutData4[i][24] == 0x30)
 					{
-
-						r = libusb_interrupt_transfer(dev_handle,
-							ep_in_addr,
-							data_Rx,
-							4,
+						length = 1024 * 3 + 28;
+					}
+					else if (BulkOutData4[i][24] == 0x40)
+					{
+						length = 1024 * 4 + 28;
+					}
+					if (length > 0)
+					{
+						memcpy(data_Tx, BulkOutData4[i], length);
+					}
+					{
+						r = libusb_bulk_transfer(dev_handle,
+							ep_out_addr,
+							data_Tx,
+							length,
 							&actLen,
-							8);
+							0);
+						//Sleep(100);
+						if (r < 0)
+						{
+							printf("Bulk transfer error.%d\n", r);
+						}
+					}
+					length = SIZE_OUT_DATA_2;
+					if(iLedLight)
+						memcpy(data_Tx, BulkOutData5[i], length);
+					else
+						memcpy(data_Tx, BulkOutData5[i], length);
+
+					{
+						r = libusb_bulk_transfer(dev_handle,
+							ep_out_addr,
+							data_Tx,
+							length,
+							&actLen,
+							0);
+					}
+
+					if (iRecvIntr == 1)
+					{
+						r = libusb_interrupt_transfer(dev_handle,
+								ep_in_addr,
+								data_Rx,
+								4,
+								&actLen,
+								10);
 						if (r >= 0)
 						{
 							printf("Received data: ");
@@ -410,26 +425,89 @@ int main(int argc, char *argv[])
 							}
 							printf("\n");
 						}
-						//else
-						//{
-						//	printf("Receive data error:%d\n", r);
-						//}
 					}
-					Sleep(100);
-					length = SIZE_OUT_DATA_2;
-					memcpy(data_Tx, BulkOutData2[i], length);
+				}	// end for
+				iSendBulk[0] = 1;
+			}
+
+			if (iSendBulk[1] == 1)
+			{
+				for (i = 0; i < NUM_OUT_DATA_TYPE; i++)
+				{
+					length = 0;
+					actLen = 0;
+
+					if (BulkOutData4[i][24] == 0x30)
+					{
+						length = 1024 * 3 + 28;
+					}
+					else if (BulkOutData4[i][24] == 0x40)
+					{
+						length = 1024 * 4 + 28;
+					}
+					if (length > 0)
+					{
+						memcpy(data_Tx, BulkOutData4[i], length);
+					}
+					//printf("Ready to send the first bulk data, Press any key to continue... \n");
+					//getchar();
+					//Sleep(100);
+					//if (iSendBulk[1] == 1)
+					{
+						r = libusb_bulk_transfer(dev_handle,
+							ep_out_addr,
+							data_Tx,
+							length,
+							&actLen,
+							1);
+						//Sleep(1);
+						if (r < 0)
+						{
+							printf("Bulk transfer error.[%d]%d\n", i, r);
+						}
+					}
+				}	// end for
+				iSendBulk[1] = 0;
+			}
+			
+			if (iSendBulk[2] == 1)
+			{
+				for (i = 0; i < NUM_OUT_DATA_3; i++)
+				{
+					if (BulkOutData3[i][24] == 0x30)
+					{
+						length = 1024 * 3 + 28;
+					}
+					else if (BulkOutData3[i][24] == 0x40)
+					{
+						length = 1024 * 4 + 28;
+					}
+					if (length > 0)
+					{
+						memcpy(data_Tx, BulkOutData3[i], length);
+					}
+
 					//printf("Ready to send the second bulk data, Press any key to continue... \n");
 					//getchar();
-					r = libusb_bulk_transfer(dev_handle,
-						ep_out_addr,
-						data_Tx,
-						length,
-						&actLen,
-						0);
-					
-				}
+					if (iSendBulk[2] == 1)
+					{
+						r = libusb_bulk_transfer(dev_handle,
+							ep_out_addr,
+							data_Tx,
+							length,
+							&actLen,
+							0);
+					}
+				}	// end for
+				iSendBulk[2] = 0;
 			}
-		}
+
+			if (iRecvIntr == 1)
+			{
+				iLedLight = 1;
+			}
+			iRecvIntr = 1;
+		}	// end while
 		libusb_free_config_descriptor(config_desc);
 	}
 	
